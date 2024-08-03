@@ -7,9 +7,11 @@ import telegram.ext.filters as filters
 import tempfile
 from datetime import datetime
 
-TOKEN = '6769849216:AAEkJSTlvjgfaMOrpWFZ0WArvs9ERXL3Y4Y'
+TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+WEBHOOK_URL = 'YOUR_WEBHOOK_URL'
 
-def format_progress_bar(filename, percentage, done, total_size, status, eta, speed, elapsed, user_mention, user_id, aria2p_gid):
+
+def format_progress_bar(filename, percentage, done, total_size, status, eta, speed, elapsed, user_mention, user_id):
     progress = f"[{done / total_size * 100:.2f}%]"
     return (
         f"{filename}\n"
@@ -22,31 +24,34 @@ def format_progress_bar(filename, percentage, done, total_size, status, eta, spe
         f"Progress: {progress}"
     )
 
+
 async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Send me a YouTube link to download.')
+
 
 async def fetch_video_info(update: Update, context: CallbackContext) -> None:
     youtube_url = update.message.text
     fetching_message = await update.message.reply_text('Fetching information of the video...')
     context.user_data['fetching_message'] = fetching_message
-    
+
     context.user_data['youtube_url'] = youtube_url
-    
+
     yt = YouTube(youtube_url)
     context.user_data['yt'] = yt
-    
+
     keyboard = [
         [InlineKeyboardButton("Video", callback_data='video')],
         [InlineKeyboardButton("Audio", callback_data='audio')],
     ]
-    
+
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Choose format:', reply_markup=reply_markup)
+
 
 async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
-    
+
     if query.data == 'video':
         context.user_data['format'] = 'video'
         yt = context.user_data['yt']
@@ -58,22 +63,22 @@ async def button(update: Update, context: CallbackContext) -> None:
             if stream.resolution not in seen_resolutions:
                 unique_video_streams.append(stream)
                 seen_resolutions.add(stream.resolution)
-        
+
         keyboard = [[InlineKeyboardButton(stream.resolution, callback_data=stream.itag)] for stream in unique_video_streams]
         keyboard.append([InlineKeyboardButton("Back", callback_data='back')])
         reply_markup = InlineKeyboardMarkup(keyboard)
-        
+
         await query.edit_message_text(text="Select resolution:", reply_markup=reply_markup)
-        
+
     elif query.data == 'audio':
         context.user_data['format'] = 'audio'
         yt = context.user_data['yt']
         audio_streams = yt.streams.filter(only_audio=True).order_by('abr').desc()
-        
+
         keyboard = [[InlineKeyboardButton(stream.abr, callback_data=stream.itag)] for stream in audio_streams]
         keyboard.append([InlineKeyboardButton("Back", callback_data='back')])
         reply_markup = InlineKeyboardMarkup(keyboard)
-        
+
         await query.edit_message_text(text="Select bitrate:", reply_markup=reply_markup)
 
     elif query.data == 'back':
@@ -89,11 +94,11 @@ async def button(update: Update, context: CallbackContext) -> None:
         yt = context.user_data['yt']
         stream = yt.streams.get_by_itag(itag)
         download_path = tempfile.mkdtemp()
-        
+
         downloading_message = await query.edit_message_text(text="Downloading, please wait...")
         if 'fetching_message' in context.user_data:
             await context.user_data['fetching_message'].delete()
-        
+
         context.user_data['downloading_message'] = downloading_message
         file_path = stream.download(output_path=download_path)
 
@@ -115,25 +120,24 @@ async def button(update: Update, context: CallbackContext) -> None:
                 speed=speed,
                 elapsed=elapsed_time_seconds,
                 user_mention=query.message.from_user.mention_html(),
-                user_id=query.message.from_user.id,
-                aria2p_gid=stream.gid
+                user_id=query.message.from_user.id
             )
             await context.user_data['downloading_message'].edit_text(progress_text)
-        
+
         if context.user_data['format'] == 'video' and not stream.includes_audio_track:
             audio_stream = yt.streams.filter(only_audio=True).order_by('abr').desc().first()
             audio_file_path = audio_stream.download(output_path=download_path)
-            
+
             output_file_path = os.path.join(download_path, yt.title + '_merged.mp4')
-            
+
             call([
                 "ffmpeg", "-i", file_path, "-i", audio_file_path,
                 "-c:v", "copy", "-c:a", "aac", output_file_path
             ], stdout=open(os.devnull, 'w'), stderr=STDOUT)
-            
+
             with open(output_file_path, 'rb') as video:
                 await query.message.reply_video(video, caption=yt.title)
-                
+
             os.remove(audio_file_path)
             os.remove(output_file_path)
         else:
@@ -143,22 +147,30 @@ async def button(update: Update, context: CallbackContext) -> None:
             else:
                 with open(file_path, 'rb') as audio:
                     await query.message.reply_audio(audio)
-        
+
         os.remove(file_path)
         os.rmdir(download_path)
-        
+
         if 'downloading_message' in context.user_data:
             await context.user_data['downloading_message'].delete()
 
+
 def main() -> None:
     application = ApplicationBuilder().token(TOKEN).build()
-    
+
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, fetch_video_info))
     application.add_handler(CallbackQueryHandler(button))
-    
-    application.run_polling()
+
+    # Set the webhook
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", "8443")),
+        url_path=TOKEN,
+        webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
+    )
+
 
 if __name__ == '__main__':
     main()
-            
+        
