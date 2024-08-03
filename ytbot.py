@@ -5,8 +5,22 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ApplicationBuilder, CallbackContext
 import telegram.ext.filters as filters
 import tempfile
+from datetime import datetime
 
-TOKEN = '6769849216:AAEkJSTlvjgfaMOrpWFZ0WArvs9ERXL3Y4Y'
+TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+
+def format_progress_bar(filename, percentage, done, total_size, status, eta, speed, elapsed, user_mention, user_id, aria2p_gid):
+    progress = f"[{done / total_size * 100:.2f}%]"
+    return (
+        f"{filename}\n"
+        f"Status: {status}\n"
+        f"Downloaded: {done / 1024 / 1024:.2f}MB/{total_size / 1024 / 1024:.2f}MB\n"
+        f"Speed: {speed / 1024:.2f}KB/s\n"
+        f"ETA: {eta}\n"
+        f"Elapsed Time: {elapsed:.2f}s\n"
+        f"User: {user_mention} ({user_id})\n"
+        f"Progress: {progress}"
+    )
 
 async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Send me a YouTube link to download.')
@@ -82,6 +96,29 @@ async def button(update: Update, context: CallbackContext) -> None:
         
         context.user_data['downloading_message'] = downloading_message
         file_path = stream.download(output_path=download_path)
+
+        start_time = datetime.now()
+        while not stream.is_complete:
+            percentage = stream.progress
+            done = stream.completed_length
+            total_size = stream.total_length
+            speed = stream.download_speed
+            eta = stream.eta
+            elapsed_time_seconds = (datetime.now() - start_time).total_seconds()
+            progress_text = format_progress_bar(
+                filename=yt.title,
+                percentage=percentage,
+                done=done,
+                total_size=total_size,
+                status="Downloading",
+                eta=eta,
+                speed=speed,
+                elapsed=elapsed_time_seconds,
+                user_mention=query.message.from_user.mention_html(),
+                user_id=query.message.from_user.id,
+                aria2p_gid=stream.gid
+            )
+            await context.user_data['downloading_message'].edit_text(progress_text)
         
         if context.user_data['format'] == 'video' and not stream.includes_audio_track:
             audio_stream = yt.streams.filter(only_audio=True).order_by('abr').desc().first()
@@ -124,3 +161,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+            
