@@ -7,12 +7,11 @@ import telegram.ext.filters as filters
 import tempfile
 from datetime import datetime
 
-TOKEN = '6769849216:AAEkJSTlvjgfaMOrpWFZ0WArvs9ERXL3Y4Y'
-WEBHOOK_URL = 'https://youtube-downloader-i377.onrender.com'
-
+TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+WEBHOOK_URL = 'YOUR_WEBHOOK_URL'
 
 def format_progress_bar(filename, percentage, done, total_size, status, eta, speed, elapsed, user_mention, user_id):
-    progress = f"[{done / total_size * 100:.2f}%]"
+    progress = f"[{percentage:.2f}%]"
     return (
         f"{filename}\n"
         f"Status: {status}\n"
@@ -24,10 +23,8 @@ def format_progress_bar(filename, percentage, done, total_size, status, eta, spe
         f"Progress: {progress}"
     )
 
-
 async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Send me a YouTube link to download.')
-
 
 async def fetch_video_info(update: Update, context: CallbackContext) -> None:
     youtube_url = update.message.text
@@ -46,7 +43,6 @@ async def fetch_video_info(update: Update, context: CallbackContext) -> None:
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Choose format:', reply_markup=reply_markup)
-
 
 async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
@@ -154,7 +150,6 @@ async def button(update: Update, context: CallbackContext) -> None:
         if 'downloading_message' in context.user_data:
             await context.user_data['downloading_message'].delete()
 
-
 def main() -> None:
     application = ApplicationBuilder().token(TOKEN).build()
 
@@ -170,7 +165,6 @@ def main() -> None:
         webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
     )
 
-
 if __name__ == '__main__':
     main()
-        
+    
