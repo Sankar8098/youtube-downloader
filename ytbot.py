@@ -7,7 +7,7 @@ import telegram.ext.filters as filters
 import tempfile
 from datetime import datetime
 
-TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+TOKEN = '6769849216:AAEkJSTlvjgfaMOrpWFZ0WArvs9ERXL3Y4Y'
 
 def format_progress_bar(filename, percentage, done, total_size, status, eta, speed, elapsed, user_mention, user_id, aria2p_gid):
     progress = f"[{done / total_size * 100:.2f}%]"
