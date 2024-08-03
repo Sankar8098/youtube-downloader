@@ -7,8 +7,9 @@ import telegram.ext.filters as filters
 import tempfile
 from datetime import datetime
 
-TOKEN = '6769849216:AAEkJSTlvjgfaMOrpWFZ0WArvs9ERXL3Y4Y'
-WEBHOOK_URL = 'https://youtube-downloader-i377.onrender.com'
+TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+WEBHOOK_URL = 'YOUR_WEBHOOK_URL'
+PORT = int(os.environ.get("PORT", 8443))
 
 def format_progress_bar(filename, percentage, done, total_size, status, eta, speed, elapsed, user_mention, user_id):
     progress = f"[{percentage:.2f}%]"
@@ -160,11 +161,11 @@ def main() -> None:
     # Set the webhook
     application.run_webhook(
         listen="0.0.0.0",
-        port=int(os.environ.get("PORT", "8443")),
+        port=PORT,
         url_path=TOKEN,
         webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
     )
 
 if __name__ == '__main__':
     main()
-    
+
