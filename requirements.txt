@@ -1,4 +1,4 @@
-pytubefix
+pytube
 python-telegram-bot[webhooks]
 ffmpeg-python
 Flask==1.1.2
