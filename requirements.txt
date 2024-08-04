@@ -1,5 +1,5 @@
-pytube
-python-telegram-bot[webhooks]
+pytubefix
+python-telegram-bot
 ffmpeg-python
 Flask==1.1.2
 gunicorn==20.1.0
