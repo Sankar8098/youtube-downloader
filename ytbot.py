@@ -1,13 +1,12 @@
 import os
-from pytube import YouTube
+from pytubefix import YouTube
 from subprocess import call, STDOUT
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ApplicationBuilder, CallbackContext
 import telegram.ext.filters as filters
 import tempfile
-import asyncio
 
-TOKEN = '6769849216:AAEkJSTlvjgfaMOrpWFZ0WArvs9ERXL3Y4Y'
+TOKEN = 'PASTE_YOUR_TELEGRAM_BOT_TOKEN_HERE'
 
 async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Send me a YouTube link to download.')
@@ -34,10 +33,9 @@ async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
     
-    yt = context.user_data['yt']
-    
     if query.data == 'video':
         context.user_data['format'] = 'video'
+        yt = context.user_data['yt']
         video_streams = yt.streams.filter(progressive=False, file_extension='mp4').order_by('resolution').desc()
 
         seen_resolutions = set()
@@ -55,6 +53,7 @@ async def button(update: Update, context: CallbackContext) -> None:
         
     elif query.data == 'audio':
         context.user_data['format'] = 'audio'
+        yt = context.user_data['yt']
         audio_streams = yt.streams.filter(only_audio=True).order_by('abr').desc()
         
         keyboard = [[InlineKeyboardButton(stream.abr, callback_data=stream.itag)] for stream in audio_streams]
@@ -82,12 +81,11 @@ async def button(update: Update, context: CallbackContext) -> None:
             await context.user_data['fetching_message'].delete()
         
         context.user_data['downloading_message'] = downloading_message
-        
-        file_path = await asyncio.to_thread(stream.download, output_path=download_path)
+        file_path = stream.download(output_path=download_path)
         
         if context.user_data['format'] == 'video' and not stream.includes_audio_track:
             audio_stream = yt.streams.filter(only_audio=True).order_by('abr').desc().first()
-            audio_file_path = await asyncio.to_thread(audio_stream.download, output_path=download_path)
+            audio_file_path = audio_stream.download(output_path=download_path)
             
             output_file_path = os.path.join(download_path, yt.title + '_merged.mp4')
             
@@ -126,4 +124,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-        
