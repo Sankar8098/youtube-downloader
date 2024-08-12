@@ -6,7 +6,8 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 import telegram.ext.filters as filters
 import tempfile
 
-TOKEN = '6750957059:AAH7FksN3gbQm3idSqP3B9eK_0_JpDnI0cs'
+TOKEN = 'YOUR_BOT_TOKEN'
+WEBHOOK_URL = 'https://yourdomain.com/path_to_webhook'  # Replace with your webhook URL
 
 async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Send me a YouTube link to download.')
@@ -119,11 +120,21 @@ async def button(update: Update, context: CallbackContext) -> None:
 def main() -> None:
     application = ApplicationBuilder().token(TOKEN).build()
     
+    # Set up webhook
+    application.bot.set_webhook(url=WEBHOOK_URL)
+
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, fetch_video_info))
     application.add_handler(CallbackQueryHandler(button))
     
-    application.run_polling()
+    # Start the application
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=8443,
+        url_path=WEBHOOK_URL.split('/')[-1],
+        cert=None,  # If using a self-signed certificate, add the path here
+        key=None,   # If using a self-signed certificate, add the path to the private key here
+    )
 
 if __name__ == '__main__':
     main()
