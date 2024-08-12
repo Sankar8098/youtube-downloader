@@ -12,22 +12,25 @@ async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Send me a YouTube link to download.')
 
 async def fetch_video_info(update: Update, context: CallbackContext) -> None:
-    youtube_url = update.message.text
-    fetching_message = await update.message.reply_text('Fetching information of the video...')
-    context.user_data['fetching_message'] = fetching_message
-    
-    context.user_data['youtube_url'] = youtube_url
-    
-    yt = YouTube(youtube_url)
-    context.user_data['yt'] = yt
-    
-    keyboard = [
-        [InlineKeyboardButton("Video", callback_data='video')],
-        [InlineKeyboardButton("Audio", callback_data='audio')],
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('Choose format:', reply_markup=reply_markup)
+    if update.message and update.message.text:
+        youtube_url = update.message.text
+        fetching_message = await update.message.reply_text('Fetching information of the video...')
+        context.user_data['fetching_message'] = fetching_message
+        
+        context.user_data['youtube_url'] = youtube_url
+        
+        yt = YouTube(youtube_url)
+        context.user_data['yt'] = yt
+        
+        keyboard = [
+            [InlineKeyboardButton("Video", callback_data='video')],
+            [InlineKeyboardButton("Audio", callback_data='audio')],
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text('Choose format:', reply_markup=reply_markup)
+    else:
+        await update.effective_chat.send_message("Please send a valid YouTube link.")
 
 async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
