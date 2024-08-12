@@ -6,32 +6,28 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 import telegram.ext.filters as filters
 import tempfile
 
-TOKEN = 'YOUR_BOT_TOKEN'
-WEBHOOK_URL = 'https://yourdomain.com/path_to_webhook'  # Replace with your webhook URL
+TOKEN = 'PASTE_YOUR_TELEGRAM_BOT_TOKEN_HERE'
 
 async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Send me a YouTube link to download.')
 
 async def fetch_video_info(update: Update, context: CallbackContext) -> None:
-    if update.message and update.message.text:
-        youtube_url = update.message.text
-        fetching_message = await update.message.reply_text('Fetching information of the video...')
-        context.user_data['fetching_message'] = fetching_message
-        
-        context.user_data['youtube_url'] = youtube_url
-        
-        yt = YouTube(youtube_url)
-        context.user_data['yt'] = yt
-        
-        keyboard = [
-            [InlineKeyboardButton("Video", callback_data='video')],
-            [InlineKeyboardButton("Audio", callback_data='audio')],
-        ]
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text('Choose format:', reply_markup=reply_markup)
-    else:
-        await update.effective_chat.send_message("Please send a valid YouTube link.")
+    youtube_url = update.message.text
+    fetching_message = await update.message.reply_text('Fetching information of the video...')
+    context.user_data['fetching_message'] = fetching_message
+    
+    context.user_data['youtube_url'] = youtube_url
+    
+    yt = YouTube(youtube_url)
+    context.user_data['yt'] = yt
+    
+    keyboard = [
+        [InlineKeyboardButton("Video", callback_data='video')],
+        [InlineKeyboardButton("Audio", callback_data='audio')],
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text('Choose format:', reply_markup=reply_markup)
 
 async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
@@ -120,21 +116,11 @@ async def button(update: Update, context: CallbackContext) -> None:
 def main() -> None:
     application = ApplicationBuilder().token(TOKEN).build()
     
-    # Set up webhook
-    application.bot.set_webhook(url=WEBHOOK_URL)
-
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, fetch_video_info))
     application.add_handler(CallbackQueryHandler(button))
     
-    # Start the application
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=8443,
-        url_path=WEBHOOK_URL.split('/')[-1],
-        cert=None,  # If using a self-signed certificate, add the path here
-        key=None,   # If using a self-signed certificate, add the path to the private key here
-    )
+    application.run_polling()
 
 if __name__ == '__main__':
     main()
